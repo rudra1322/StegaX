@@ -6,6 +6,13 @@ import io
 app = Flask(__name__)
 CORS(app)
 
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "service": "StegaX backend"
+    })
+
 def lsb_hide(cover_image, secret_data):
     cover = cover_image.convert("RGBA")
     pixels = cover.load()
