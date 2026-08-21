@@ -1,7 +1,12 @@
 "use client"
 
 import type React from "react"
-import { hideFile, extractFile } from "@/lib/api"
+import {
+  hideFile,
+  extractFile,
+  hideText,
+  extractText,
+} from "@/lib/api"
 
 import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -350,12 +355,9 @@ export default function StegaX() {
 
   setStegoImageUrl(stegoUrl)
 } else {
-  // Keep text mode on the existing client-side implementation for now
-  const stegoUrl = await hideDataInImage(
-    coverImage,
-    secretText,
-    hidePassword
-  )
+  const blob = await hideText(coverImage, secretText)
+
+  const stegoUrl = URL.createObjectURL(blob)
 
   setStegoImageUrl(stegoUrl)
 }
@@ -382,6 +384,35 @@ export default function StegaX() {
   setIsProcessing(true)
 
   try {
+    // First try extracting as TEXT using Flask
+    try {
+      const result = await extractText(stegoImage)
+
+      if (result.success && typeof result.text === "string") {
+        const textBlob = new Blob([result.text], {
+          type: "text/plain",
+        })
+
+        const url = URL.createObjectURL(textBlob)
+
+        setExtractedFile({
+          name: "secret-text.txt",
+          url,
+        })
+
+        setExtractedText(result.text)
+
+        setResultMessage("Text successfully extracted!")
+        setResultType("success")
+        setShowResult(true)
+
+        return
+      }
+    } catch {
+      // Not text → try normal file extraction
+    }
+
+    // If text extraction fails, extract as FILE
     const blob = await extractFile(stegoImage)
 
     const url = URL.createObjectURL(blob)
@@ -396,11 +427,12 @@ export default function StegaX() {
     setResultMessage("File successfully extracted!")
     setResultType("success")
     setShowResult(true)
+
   } catch (error) {
     setResultMessage(
       error instanceof Error
         ? error.message
-        : "Failed to extract file"
+        : "Failed to extract data"
     )
 
     setResultType("error")

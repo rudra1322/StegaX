@@ -49,3 +49,49 @@ export async function extractFile(stegoImage: File) {
 
   return await response.blob()
 }
+
+export async function hideText(
+  coverImage: File,
+  text: string
+) {
+  const formData = new FormData()
+
+  formData.append("cover", coverImage)
+  formData.append("text", text)
+
+  const response = await fetch(`${API_URL}/api/hide-text`, {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+
+    throw new Error(
+      error.error || "Failed to hide text"
+    )
+  }
+
+  return await response.blob()
+}
+
+export async function extractText(stegoImage: File) {
+  const formData = new FormData()
+
+  formData.append("stego", stegoImage)
+
+  const response = await fetch(`${API_URL}/api/extract-text`, {
+    method: "POST",
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+
+    throw new Error(
+      error.error || "Failed to extract text"
+    )
+  }
+
+  return await response.json()
+}
