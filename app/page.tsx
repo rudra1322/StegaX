@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { hideFile } from "@/lib/api"
+import { hideFile, extractFile } from "@/lib/api"
 
 import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -371,37 +371,44 @@ export default function StegaX() {
     }
   }
 
-  const handleExtractFile = async () => {
-    if (!stegoImage) {
-      setResultMessage("Please select a stego image")
-      setResultType("error")
-      setShowResult(true)
-      return
-    }
-
-    setIsProcessing(true)
-    try {
-      const extracted = await extractDataFromImage(stegoImage, extractPassword)
-      setExtractedFile(extracted)
-
-      if (extracted.isText && extracted.text) {
-        setExtractedText(extracted.text)
-        setResultMessage("Text successfully extracted!")
-      } else {
-        setExtractedText(null)
-        setResultMessage("File successfully extracted!")
-      }
-
-      setResultType("success")
-      setShowResult(true)
-    } catch (error) {
-      setResultMessage(error instanceof Error ? error.message : "Failed to extract data")
-      setResultType("error")
-      setShowResult(true)
-    } finally {
-      setIsProcessing(false)
-    }
+ const handleExtractFile = async () => {
+  if (!stegoImage) {
+    setResultMessage("Please select a stego image")
+    setResultType("error")
+    setShowResult(true)
+    return
   }
+
+  setIsProcessing(true)
+
+  try {
+    const blob = await extractFile(stegoImage)
+
+    const url = URL.createObjectURL(blob)
+
+    setExtractedFile({
+      name: "extracted-secret",
+      url,
+    })
+
+    setExtractedText(null)
+
+    setResultMessage("File successfully extracted!")
+    setResultType("success")
+    setShowResult(true)
+  } catch (error) {
+    setResultMessage(
+      error instanceof Error
+        ? error.message
+        : "Failed to extract file"
+    )
+
+    setResultType("error")
+    setShowResult(true)
+  } finally {
+    setIsProcessing(false)
+  }
+}
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement("a")
