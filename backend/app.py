@@ -6,6 +6,11 @@ import io
 app = Flask(__name__)
 CORS(app)
 
+CORS(app, origins=[
+    "https://blackmafia.in",
+    "https://www.blackmafia.in"
+])
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({

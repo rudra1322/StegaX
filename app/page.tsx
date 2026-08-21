@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { hideFile } from "@/lib/api"
 
 import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -342,9 +343,22 @@ export default function StegaX() {
 
     setIsProcessing(true)
     try {
-      const secretData = hideMode === "file" ? secretFile! : secretText
-      const stegoUrl = await hideDataInImage(coverImage, secretData, hidePassword)
-      setStegoImageUrl(stegoUrl)
+      if (hideMode === "file") {
+  const blob = await hideFile(coverImage, secretFile!)
+
+  const stegoUrl = URL.createObjectURL(blob)
+
+  setStegoImageUrl(stegoUrl)
+} else {
+  // Keep text mode on the existing client-side implementation for now
+  const stegoUrl = await hideDataInImage(
+    coverImage,
+    secretText,
+    hidePassword
+  )
+
+  setStegoImageUrl(stegoUrl)
+}
       setResultMessage(`${hideMode === "file" ? "File" : "Text"} successfully hidden in image!`)
       setResultType("success")
       setShowResult(true)
