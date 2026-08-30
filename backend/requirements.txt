@@ -3,3 +3,5 @@ flask-cors
 Pillow
 gunicorn
 flask-cors
+Werkzeug
+PyJWT

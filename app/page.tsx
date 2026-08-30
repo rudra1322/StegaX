@@ -6,8 +6,12 @@ import {
   extractFile,
   hideText,
   extractText,
+  registerUser,
+  loginUser,
+  getCurrentUser,
 } from "@/lib/api"
 
+import { useEffect } from "react"
 import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,6 +57,30 @@ export default function StegaX() {
   const [authPassword, setAuthPassword] = useState("")
   const [authConfirmPassword, setAuthConfirmPassword] = useState("")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  useEffect(() => {
+  const token = localStorage.getItem("stegax_token")
+
+  if (!token) {
+    return
+  }
+
+  const restoreSession = async () => {
+    try {
+      const data = await getCurrentUser(token)
+
+      if (data.success && data.user) {
+        setIsAuthenticated(true)
+        setUserEmail(data.user.email)
+      }
+    } catch {
+      localStorage.removeItem("stegax_token")
+      setIsAuthenticated(false)
+      setUserEmail("")
+    }
+  }
+
+  restoreSession()
+}, [])
   const [userEmail, setUserEmail] = useState("")
 
   // Hide functionality state
@@ -451,48 +479,94 @@ export default function StegaX() {
     document.body.removeChild(a)
   }
 
-  const handleAuth = () => {
-    if (authMode === "signup") {
-      if (authPassword !== authConfirmPassword) {
-        setResultMessage("Passwords do not match")
-        setResultType("error")
-        setShowResult(true)
-        return
-      }
-      if (authPassword.length < 6) {
-        setResultMessage("Password must be at least 6 characters")
-        setResultType("error")
-        setShowResult(true)
-        return
-      }
-    }
-
-    if (!authEmail || !authPassword) {
-      setResultMessage("Please fill in all fields")
+  const handleAuth = async () => {
+  if (authMode === "signup") {
+    if (authPassword !== authConfirmPassword) {
+      setResultMessage("Passwords do not match")
       setResultType("error")
       setShowResult(true)
       return
     }
 
-    // Simulate authentication
+    if (authPassword.length < 8) {
+      setResultMessage("Password must be at least 8 characters")
+      setResultType("error")
+      setShowResult(true)
+      return
+    }
+  }
+
+  if (!authEmail || !authPassword) {
+    setResultMessage("Please fill in all fields")
+    setResultType("error")
+    setShowResult(true)
+    return
+  }
+
+  setIsProcessing(true)
+
+  try {
+    if (authMode === "signup") {
+      // Real signup request to Flask backend
+      await registerUser(
+        authEmail,
+        authPassword
+      )
+
+      setResultMessage("Account created successfully!")
+    } else {
+      // Real login request to Flask backend
+      const data = await loginUser(
+        authEmail,
+        authPassword
+      )
+
+      // Store JWT for authenticated API requests
+      localStorage.setItem(
+        "stegax_token",
+        data.token
+      )
+
+      setResultMessage("Successfully signed in!")
+    }
+
     setIsAuthenticated(true)
     setUserEmail(authEmail)
+
     setShowAuthModal(false)
+
     setAuthEmail("")
     setAuthPassword("")
     setAuthConfirmPassword("")
-    setResultMessage(`Successfully ${authMode === "signin" ? "signed in" : "signed up"}!`)
+
     setResultType("success")
     setShowResult(true)
+
+  } catch (error) {
+    setResultMessage(
+      error instanceof Error
+        ? error.message
+        : "Authentication failed"
+    )
+
+    setResultType("error")
+    setShowResult(true)
+
+  } finally {
+    setIsProcessing(false)
   }
+}
 
   const handleSignOut = () => {
-    setIsAuthenticated(false)
-    setUserEmail("")
-    setResultMessage("Successfully signed out!")
-    setResultType("success")
-    setShowResult(true)
-  }
+  localStorage.removeItem("stegax_token")
+
+  setIsAuthenticated(false)
+  setUserEmail("")
+
+  setResultMessage("Successfully signed out!")
+  setResultType("success")
+  setShowResult(true)
+}
 
   const openAuthModal = (mode: "signin" | "signup") => {
     setAuthMode(mode)
