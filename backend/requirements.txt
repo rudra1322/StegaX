@@ -7,3 +7,4 @@ Werkzeug
 PyJWT
 python-dotenv
 
+Flask-SQLAlchemy
