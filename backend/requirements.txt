@@ -8,3 +8,4 @@ PyJWT
 python-dotenv
 
 Flask-SQLAlchemy
+Flask-Migrate
